@@ -1,0 +1,143 @@
+#!/bin/bash
+set -e
+
+function print_help {
+    # ***
+    # Print help
+    # ***
+
+    echo "Usage: $0 (bump|dump|release) <args>"
+    echo
+    echo "Commands:"
+    echo "    bump <version>                Bump version number"
+    echo "    dump [mysql_args] <database>  Dump ilias database"
+    echo "    release <version>             Create release commit"
+}
+
+function check_ilias {
+    # ***
+    # Check if current working dir is an ilias repo
+    # ***
+
+    if [ ! -f './include/inc.ilias_version.php' ]; then
+        echo "Working directory does not seem to be an ilias repository."
+        echo
+        echo "Make sure you're running this script at the root directory of" \
+            "an ilias repository."
+        exit 1
+    fi
+}
+
+function bump {
+    # ***
+    # Bump version number
+    # ***
+
+    if [ $# -ne 1 ]; then
+        echo "Invalid argument for 'bump': $*"
+        print_help
+        exit 1
+    fi
+
+    version="$1"
+    version_file="include/inc.ilias_version.php"
+    sed -i \
+        "s/\"ILIAS_VERSION\", \".*\"/\"ILIAS_VERSION\", \"$version $(date +%Y-%m-%d)\"/" \
+        $version_file
+    sed -i \
+        "s/\"ILIAS_VERSION_NUMERIC\", \".*\"/\"ILIAS_VERSION_NUMERIC\", \"$version\"/" \
+        $version_file
+
+    echo "Successfully bumped ilias version number to $version."
+    echo
+    echo "Please review the changes using 'git diff' and continue the" \
+        "release process if everything looks ok."
+}
+
+function dump {
+    # ***
+    # Dump ilias database
+    # ***
+
+    if [ $# -lt 1 ]; then
+        echo "Invalid argument for 'dump': At least a database name is" \
+            "required"
+        print_help
+        exit 1
+    fi
+
+    mysql_args="$*"
+    mysql_dump_file="./setup/sql/ilias3.sql"
+    mysqldump=${MYSQLDUMP:=mysqldump}
+
+    $mysqldump \
+        -Q \
+        --skip-lock-tables \
+        --extended-insert=false \
+        --add-drop-table=false \
+        --default-character-set=utf8 \
+        --add-locks=false \
+        --compatible=mysql40 \
+        $mysql_args > $mysql_dump_file
+    sed -i 's/TYPE=MyISAM/ENGINE=MyISAM/' $mysql_dump_file
+    sed -i '/*!40/d' $mysql_dump_file
+    dos2unix -q $mysql_dump_file
+
+    echo "Successfully dumped ilias database to $mysql_dump_file."
+    echo
+    echo "Please review the changes using 'git diff' and continue the" \
+        "release process if everything looks ok."
+}
+
+function release {
+    # ***
+    # Create release commit
+    # ***
+
+    if [ $# -ne 1 ]; then
+        echo "Invalid argument for 'release': $*"
+        print_help
+        exit 1
+    fi
+
+    version="$1"
+    git commit -a -m "Release $version"
+    git tag "v$version" -m "Release $version"
+
+    echo "Successfully created release commit for version $version."
+    echo
+    echo "Please review the changes using 'git log' and continue the" \
+        "release process if everything looks ok."
+}
+
+if [ $# -lt 1 ]; then
+    print_help
+    exit 1
+fi
+
+check_ilias
+
+cmd="$1"
+case $cmd in
+    bump)
+        shift
+        bump $*
+        ;;
+    dump)
+        shift
+        dump $*
+        ;;
+    release)
+        shift
+        release $*
+        ;;
+    --help|-h)
+        print_help
+        exit 0
+        ;;
+    *)
+        echo "Unknown command '$cmd'"
+        print_help
+        exit 1
+        ;;
+esac
