@@ -41,9 +41,12 @@ function bump {
 
     version="$1"
     version_file="include/inc.ilias_version.php"
+
+    # Set ILIAS_VERSION to "X.Y.Z YYYY-MM-DD"
     sed -i \
         "s/\"ILIAS_VERSION\", \".*\"/\"ILIAS_VERSION\", \"$version $(date +%Y-%m-%d)\"/" \
         $version_file
+    # Set ILIAS_VERSION_NUMERIC to "X.Y.Z"
     sed -i \
         "s/\"ILIAS_VERSION_NUMERIC\", \".*\"/\"ILIAS_VERSION_NUMERIC\", \"$version\"/" \
         $version_file
@@ -68,8 +71,11 @@ function dump {
 
     mysql_args="$*"
     mysql_dump_file="./setup/sql/ilias3.sql"
+
+    # Respect env var $MYSQLDUMP if available, defaults to 'mysqldump'
     mysqldump=${MYSQLDUMP:=mysqldump}
 
+    # Dump database
     $mysqldump \
         -Q \
         --skip-lock-tables \
@@ -79,8 +85,11 @@ function dump {
         --add-locks=false \
         --compatible=mysql40 \
         $mysql_args > $mysql_dump_file
+    # Replace 'TYPE=MyISAM' with 'ENGINE=MyISAM'
     sed -i 's/TYPE=MyISAM/ENGINE=MyISAM/' $mysql_dump_file
+    # Remove parameter lines
     sed -i '/*!40/d' $mysql_dump_file
+    # Convert to unix line endings
     dos2unix -q $mysql_dump_file
 
     echo "Successfully dumped ilias database to $mysql_dump_file."
@@ -101,7 +110,9 @@ function release {
     fi
 
     version="$1"
+    # Create commit containing all changes
     git commit -a -m "Release $version"
+    # Create tag accoring to scheme
     git tag "v$version" -m "Release $version"
 
     echo "Successfully created release commit for version $version."
