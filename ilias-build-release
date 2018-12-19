@@ -88,8 +88,13 @@ function dump {
     sed -i '/*!40/d' $mysql_dump_file
     # Convert to unix line endings
     dos2unix -q $mysql_dump_file
-
     echo "Successfully dumped ilias database to $mysql_dump_file."
+
+    template_file="./setup/sql/ilDBTemplate.php"
+    script_dir="$(dirname ${BASH_SOURCE[0]})"
+    php $script_dir/scripts/db_template_writer.php $mysql_args
+    echo "Successfully created database template at $template_file."
+
     echo
     echo "Please review the changes using 'git diff' and continue the" \
         "release process if everything looks ok."
