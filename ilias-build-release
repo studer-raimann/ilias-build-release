@@ -72,11 +72,8 @@ function dump {
     mysql_args="$*"
     mysql_dump_file="./setup/sql/ilias3.sql"
 
-    # Respect env var $MYSQLDUMP if available, defaults to 'mysqldump'
-    mysqldump=${MYSQLDUMP:=mysqldump}
-
     # Dump database
-    $mysqldump \
+    mysqldump \
         -Q \
         --skip-lock-tables \
         --extended-insert=false \
