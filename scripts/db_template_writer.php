@@ -2,6 +2,7 @@
 require_once("libs/composer/vendor/autoload.php");
 include_once("Services/Init/classes/class.ilErrorHandling.php");
 include_once("Services/Database/classes/class.ilDBWrapperFactory.php");
+require_once("./Services/Utilities/classes/class.ilBenchmark.php");
 
 function getArg($args, $short, $long, $default) {
 	$value = $default;
@@ -18,6 +19,11 @@ $dbUser = getArg($args, "u", "user", "root");
 $dbPassword = getArg($args, "p", "password", "");
 $dbName = end($argv);
 
+global $DIC, $ilDB;
+
+$DIC = new \ILIAS\DI\Container();
+$DIC['ilBench'] = new ilBenchmark();
+
 $ilDB = ilDBWrapperFactory::getWrapper("mysql");
 
 $ilDB->setDbHost($dbHost);
@@ -27,7 +33,7 @@ $ilDB->setDbUser($dbUser);
 $ilDB->setDbPassword($dbPassword);
 $ilDB->connect();
 
-$GLOBALS["ilDB"] = $ilDB;
+$DIC["ilDB"] = $ilDB;
 
 include_once("Services/Database/classes/class.ilDBAnalyzer.php");
 include_once("Services/Database/classes/class.ilMySQLAbstraction.php");
