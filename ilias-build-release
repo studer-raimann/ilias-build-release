@@ -82,8 +82,11 @@ function dump {
         --add-locks=false \
         --compatible=mysql40 \
         $mysql_args > $mysql_dump_file
-    # Replace 'TYPE=MyISAM' with 'ENGINE=MyISAM'
-    sed -i 's/TYPE=MyISAM/ENGINE=MyISAM/' $mysql_dump_file
+    # Replace all 'TYPE=*' and 'ENGINE=*' with noting.
+    sed -i 's/TYPE=MyISAM//' $mysql_dump_file
+    sed -i 's/TYPE=InnoDB//' $mysql_dump_file
+    sed -i 's/ENGINE=InnoDB//' $mysql_dump_file
+    sed -i 's/ENGINE=MyISAM//' $mysql_dump_file
     # Remove parameter lines
     sed -i '/*!40/d' $mysql_dump_file
     # Convert to unix line endings
